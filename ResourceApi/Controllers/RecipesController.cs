@@ -16,28 +16,46 @@ public class RecipesController(ResourceDbContext context) : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        var entities = await context.Recipes.ToListAsync();
+        // 1. Fetch from DB with Ingredients
+        var entities = await context.Recipes
+            .Include(r => r.Ingredients)
+            .ToListAsync();
 
-        // Select logic maps Entity -> DTO
-        var dtos = entities.Select(entity => new RecipeDto
+        // 2. Map Entity -> Response (Using Positional Records)
+        var responses = entities.Select(e => new RecipeListResponse(
+            e.Id,
+            e.Title,
+            e.Instruction,
+            e.Ingredients.Select(i => new IngredientDto(
+                i.Description,
+                i.Quantity,
+                i.UnitOfMeasure
+            )).ToList()
+        ));
+
+        return Ok(responses);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create(CreateRecipeRequest request)
+    {
+        var entity = new Recipe
         {
-            Title = entity.Title,
-            Instructions = entity.Instruction, // Mapped to 'Instructions' for Frontend
-            // Parse raw data into friendly format
-            Ingredients = entity.RawIngredients.Split('|').Select(i =>
+            Title = request.Title, // Accessing Record properties is the same!
+            Instruction = request.Instructions,
+            InternalComments = "Created via API",
+            // Map the list directly!
+            Ingredients = request.Ingredients.Select(i => new Ingredient
             {
-                // Format assumed: Item,Quantity,Uom (e.g. Chicken,1,kg)
-                // If old format (Item,Qty), default Uom to "unit"
-                var parts = i.Split(',');
-                return new IngredientDto
-                {
-                    Item = parts[0],
-                    Quantity = parts[1],
-                    Uom = parts.Length > 2 ? parts[2] : "unit"
-                };
+                Description = i.Item,
+                Quantity = i.Quantity,
+                UnitOfMeasure = i.Uom
             }).ToList()
-        });
+        };
 
-        return Ok(dtos);
+        context.Recipes.Add(entity);
+        await context.SaveChangesAsync();
+
+        return Created("", new { Message = "Recipe Created!" });
     }
 }

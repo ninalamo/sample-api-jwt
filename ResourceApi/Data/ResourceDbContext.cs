@@ -1,28 +1,27 @@
 using Microsoft.EntityFrameworkCore;
+using ResourceApi.Data;
 
 namespace ResourceApi.Data;
 
-public class ResourceDbContext : DbContext
+public class ResourceDbContext(DbContextOptions<ResourceDbContext> options) : DbContext(options)
 {
-    public ResourceDbContext(DbContextOptions<ResourceDbContext> options) : base(options)
-    {
-    }
-
     public DbSet<Recipe> Recipes { get; set; } = default!;
+    public DbSet<Ingredient> Ingredients { get; set; } = default!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<Recipe>().HasData(new Recipe
+        {
+            Id = 1,
+            Title = "Chicken Adobo",
+            InternalComments = "Grandma's secret",
+            Instruction = "Combine and simmer."
+        });
 
-        modelBuilder.Entity<Recipe>().HasData(
-            new Recipe
-            {
-                Id = 1,
-                Title = "Chicken Adobo",
-                InternalComments = "Grandma's secret recipe, do not share with competitors.",
-                RawIngredients = "Chicken,1,kg|Soy Sauce,0.5,cup|Vinegar,0.5,cup|Garlic,1,head",
-                Instruction = "Combine all ingredients in a pot. Marinate for 30 mins. Simmer until tender."
-            }
+        modelBuilder.Entity<Ingredient>().HasData(
+            new Ingredient { Id = 1, Description = "Chicken", Quantity = "1", UnitOfMeasure = "kg", RecipeId = 1 },
+            new Ingredient { Id = 2, Description = "Soy Sauce", Quantity = "0.5", UnitOfMeasure = "cup", RecipeId = 1 }
         );
     }
 }
