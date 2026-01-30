@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Manual: ResourceApi</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border: 1px solid #ddd;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        @media print {
+            body {
+                max-width: 100%;
+                padding: 0;
+            }
+
+            pre {
+                white-space: pre-wrap;
+                word-wrap: break-word;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Lab Manual: ResourceApi (Protected Service)</h1>
+    <p>This guide covers setting up a <strong>Protected API</strong> that verifies JWT tokens.</p>
+
+    <h2>Goal</h2>
+    <p>Create an API that serves data (Recipes) only to users with a valid JWT Token.</p>
+
+    <h2>Step 1: Project Setup</h2>
+    <ol>
+        <li>
+            <strong>Create Project:</strong>
+            <pre><code>dotnet new webapi -n ResourceApi --no-openapi
+cd ResourceApi</code></pre>
+        </li>
+        <li>
+            <strong>Install Dependencies:</strong>
+            <pre><code>dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer</code></pre>
+        </li>
+    </ol>
+
+    <h2>Step 2: Domain Model</h2>
+    <p><strong>Create <code>Models/Recipe.cs</code>:</strong> Defines the data structure (Title, Ingredients,
+        Instructions).</p>
+
+    <h2>Step 3: Protected Controller (<code>RecipesController</code>)</h2>
+    <ol>
+        <li>
+            <strong>Create Controller:</strong>
+            <ul>
+                <li>Mark with <code>[Authorize]</code>.</li>
+                <li>Return a list of Recipes.</li>
+            </ul>
+        </li>
+        <li>
+            <strong>Behavior:</strong>
+            <ul>
+                <li>If a request has no header -&gt; <strong>401 Unauthorized</strong>.</li>
+                <li>If a request has a valid header -&gt; <strong>200 OK</strong> + Data.</li>
+            </ul>
+        </li>
+    </ol>
+
+    <h2>Step 4: Token Validation (<code>Program.cs</code>)</h2>
+    <p>We must configure the app to understand how to validate the incoming token.</p>
+    <pre><code>builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8
+                .GetBytes(builder.Configuration.GetSection("JwtSettings:Key").Value!)),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });</code></pre>
+
+    <h2>Step 5: Testing</h2>
+    <ol>
+        <li><strong>Obtain a Token:</strong> Get a valid JWT token from your Identity Provider.</li>
+        <li>
+            <strong>Call API:</strong>
+            <pre><code>curl -H "Authorization: Bearer &lt;TOKEN&gt;" http://localhost:&lt;PORT&gt;/api/recipes</code></pre>
+        </li>
+    </ol>
+</body>
+
+</html>
