@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using ResourceApi.Data;
 using ResourceApi.Models;
 
 namespace ResourceApi.Controllers;
@@ -7,30 +9,35 @@ namespace ResourceApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class RecipesController : ControllerBase
+public class RecipesController(ResourceDbContext context) : ControllerBase
 {
-    private static readonly List<Recipe> Recipes = new()
-    {
-        new Recipe
-        {
-            Title = "Chicken Adobo",
-            Ingredients = new List<Ingredient>
-            {
-                new Ingredient { Item = "Chicken", Quantity = 1, Uom = "kg" },
-                new Ingredient { Item = "Soy Sauce", Quantity = 0.5, Uom = "cup" },
-                new Ingredient { Item = "Vinegar", Quantity = 0.5, Uom = "cup" },
-                new Ingredient { Item = "Garlic", Quantity = 1, Uom = "head" },
-                new Ingredient { Item = "Bay Leaves", Quantity = 3, Uom = "pcs" },
-                new Ingredient { Item = "Peppercorns", Quantity = 1, Uom = "tbsp" },
-                new Ingredient { Item = "Salt", Quantity = 1, Uom = "tbsp" } // Required from user example
-            },
-            Instruction = "Combine all ingredients in a pot. Marinate for 30 mins. Simmer for 40 mins until tender. Fry slightly if desired."
-        }
-    };
+
 
     [HttpGet]
-    public IActionResult Get()
+    public async Task<IActionResult> Get()
     {
-        return Ok(Recipes);
+        var entities = await context.Recipes.ToListAsync();
+
+        // Select logic maps Entity -> DTO
+        var dtos = entities.Select(entity => new RecipeDto
+        {
+            Title = entity.Title,
+            Instructions = entity.Instruction, // Mapped to 'Instructions' for Frontend
+            // Parse raw data into friendly format
+            Ingredients = entity.RawIngredients.Split('|').Select(i =>
+            {
+                // Format assumed: Item,Quantity,Uom (e.g. Chicken,1,kg)
+                // If old format (Item,Qty), default Uom to "unit"
+                var parts = i.Split(',');
+                return new IngredientDto
+                {
+                    Item = parts[0],
+                    Quantity = parts[1],
+                    Uom = parts.Length > 2 ? parts[2] : "unit"
+                };
+            }).ToList()
+        });
+
+        return Ok(dtos);
     }
 }
