@@ -58,6 +58,27 @@ sequenceDiagram
 *   Like `npm` for Node.js. Used to install libraries (e.g., `Microsoft.EntityFrameworkCore`).
 *   **Rule**: Match your package version (8.x, 9.x) to your .NET SDK version.
 
+### **What is `dotnet-tools.json`?**
+*   **The Artifact**: It is a manifesto file (similar to `package.json` for tools) that "locks" the version of CLI tools like `dotnet-ef`.
+*   **Why use it?**: If working in a team, it ensures Developer A and Developer B use the exact same version of the EF Core tools.
+*   **Visual Studio Users**: **You likely DO NOT need this.**
+    *   If you use the **Package Manager Console** inside Visual Studio (`Add-Migration`, `Update-Database`), you are using the Powershell tools, which come from the NuGet package `Microsoft.EntityFrameworkCore.Tools`.
+    *   `dotnet-tools.json` is strictly for those running commands in the **Terminal** (`dotnet ef migrations add`).
+
+### **Migrations vs. `EnsureCreated`**
+*   **Migrations**: Think of this as version control (Git) for your database.
+    *   *Usage*: When you add a property to a class, you create a "migration" to tell the DB to add a column.
+    *   *Process*: `dotnet ef migrations add NewCol` -> `dotnet ef database update`.
+    *   *Folder*: The `Migrations` folder stores these history files.
+*   **`EnsureCreated()`**: The "Reset" button.
+    *   *Usage*: Checks if DB exists. If not, creates it with the *current* schema.
+    *   *Our Strategy*: Since we are learning and our entities (`Recipe`, `User`) define the final state, `EnsureCreated` is simpler. We don't need to keep a history of changes for this demo.
+
+### **Common Folders Explained**
+*   **`Helpers/`**: Sometimes used for utility code (e.g., extensions). If empty, you can safely delete it.
+*   **`Migrations/`**: Stores the history of your database schema changes (see above).
+*   **`Properties/`**: Stores `launchSettings.json` (controls how the app runs locally).
+
 ---
 
 ## 4. Part 1: The Authentication Service (`AuthApi`)
